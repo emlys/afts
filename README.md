@@ -1,0 +1,2 @@
+# AFTS
+mailgun script
