@@ -2,10 +2,37 @@ import time
 import requests
 import json
 import pandas as pd
+import pprint
 
 # fill in with your api key
 API_KEY = 'censored'
 
+# make api request
+r = requests.get("https://api.mailgun.net/v3/afts.com/tags",auth=("api", API_KEY))
+
+# API response comes in JSON format
+# use built-in json decoding method to parse it to a dictionary
+response_dict = r.json()
+
+# display the response in a way that's easier to read
+pp = pprint.PrettyPrinter()
+pp.pprint(response_dict)
+
+
+items = response_dict["items"]
+
+# a list of all the tags in the response
+tags = [item["tag"] for item in items]
+
+print("Total number of tags:", len(tags))
+
+
+def filter_out_2020(tags: list):
+    # filter out all the tags that contain the string '2020'
+    return [tag for tag in tags if "2020" not in tag]
+
+# print("Tags not containing 2020:")
+# print(filter_out_2020(tags))
 
 
 def delete_tag(TAG_STRING):
@@ -13,40 +40,19 @@ def delete_tag(TAG_STRING):
         "https://api.mailgun.net/v3/afts.com/tags/" + TAG_STRING,
         auth=("api", API_KEY))
 
+# a list of all the tags that don't contain '2020'
+tags_not_2020 = filter_out_2020(tags)
 
-r = requests.get("https://api.mailgun.net/v3/afts.com/tags",auth=("api", API_KEY),
-        params={"limit": 5})
+# replace this with whatever list of tags you want to delete
+tags_to_delete = ["Alderwood-2019-JUN-26"]  # or tags_not_2020
 
-# get mailgun data 
-data_string = r.text
-# is this json data ?
-## print(data_string)
+# delete each tag one by one
+for tag in tags_to_delete:
+    response = delete_tag(tag)
 
-## print(" ")
-## print(" -- json above ?? -- ")
-## print(" ")
-
-#convert to dict - is this a way to get the rows to access the 'tag' data
-a_dict = json.loads(data_string)
-
-## for item in a_dict.items():
-##     print(item)
-##     print(type(item))
-
-## print(" ")
-## print("now here")
-## print(" ")
-
-keys = a_dict.keys()
-print(keys)
-
-print(" ")
-print("keys above values below")
-print(" ")
-
-
-values = a_dict.values()
-print(values)
-
-delete_tag("Alderwood-2019-JUN-26")
-print("Tag deleted...")
+    # it returns 200 even if the tag didn't exist
+    if response.status_code == 200:
+        print("Tag " + tag + " successfully deleted or doesn't exist")
+    else:
+        print("ERROR deleting tag " + tag + ": ")
+        pp.pprint(response.json())
